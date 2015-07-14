@@ -3,4 +3,4 @@
 git add .
 git commit -m "polies+glsl"
 git remote add origin https://github.com/bobbysoon/VoroManhattan.git
-git push -u -f origin master
+git push -u -origin master

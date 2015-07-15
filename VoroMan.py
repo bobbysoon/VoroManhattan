@@ -391,29 +391,30 @@ def Manhattan( P, boundingBox ):
 				poly[i].borders.append(Border(line[:],poly[j]))
 				poly[j].borders.append(Border(line[:],poly[i]))
 
-	print 'lMax=',lMax,'\tPLENTY=',PLENTY
-	#return [pol for pol in poly if pol.loopBorders(smallVal=smallVal)]
-
 	for pol in poly: pol.isClosed=pol.loopBorders(smallVal=smallVal)
-	return poly
+	return [pol for pol in poly if pol.isClosed]
 
 def VoroMan(centroids, boundingBox):
 	polies = Manhattan( centroids, boundingBox ) # bounding box not really implemented yet. Only size is used.
 	for pol in polies:
 		pol.verts=[]
+		pol.others=[]
 		for b in pol.borders:
-			i=len(pol.verts)
-			pol.verts.extend(b.line[:-1])
-			b.vertsSlice = (i-1,i+len(b.line)-1)
+			verts=b.line[:-1]
+			pol.verts.extend(verts)
+			pol.others.extend([b.other and b.other.isClosed]*len(verts))
+			b.nVerts=len(b.line)
 			delattr(b,'line')
 
-		s=0
+		s=0 # CCW winding order
 		for i in range(len(pol.verts)):
 			x1,y1=pol.verts[i-1]
 			x2,y2=pol.verts[i]
 			s+=(x1-x2)*(y1-y2)
-		if s<0:
+		pol.reversed=s<0
+		if False and pol.reversed:
 			pol.verts.reverse()
+			pol.others.reverse()
 
 	return polies
 

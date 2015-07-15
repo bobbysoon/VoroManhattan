@@ -41,28 +41,6 @@ class Border:
 	def __getitem__(self, key):				return self.line[key]
 	def __setitem__(self, key, value):		self.line[key]= value
 
-	def interlink(self, otherBorders, smallVal):
-		for b in otherBorders:
-			dists= {self.line[i].dist(b.line[j]):(i,j) for i,j in [(0,0),(0,-1),(-1,0),(-1,-1)]}
-			nearest= sorted(dists.keys())[0]
-			if nearest and nearest<smallVal:
-				i,j = dists[nearest]
-				if i==j:
-					j=-1-j ; b.reverse()
-				if i:	ii,jj=-2,1
-				else:	ii,jj=1,-2
-				if nearest>0:
-					ip= rayRayIntersectPoint(self.line[ii],self.line[i],b.line[jj],b.line[j])
-					if ip:
-						self.line[i],b.line[j] = ip,ip
-				if i:	self.next,b.prev = b,self
-				else:	self.prev,b.next = b,self
-			else:
-				print 'nearest=',nearest
-	def debug(self, otherBorders):
-		for b in otherBorders:
-			dists= {self.line[i].dist(b.line[j]):(i,j) for i,j in [(0,0),(0,-1),(-1,0),(-1,-1)]}
-			print sorted(dists.keys())[:3]
 	def reverse(self):
 		#if self.flipped: raise
 		#self.flipped=not self.flipped
@@ -75,137 +53,20 @@ def collinear(p0, p1, p2, asBool=True):
 	return (n < 1e-8) if asBool else n
 
 
-
 class Poly:
 	def __init__(self, centroid):
 		self.centroid= centroid
-		self.verts=[]
-		self.lines=[]
-		self.others=[]
-		self.edges=[]
 		self.borders=[]
+		#self.verts=[]
+		#self.lines=[]
+		#self.others=[]
+		#self.edges=[]
 
 	def addLine(self, other, line):
 		self.lines.append(line)
 		self.others.append(other)
 
-	def _addLine(self, other, line):
-		for p in line:
-			if not p in self.verts:
-				self.verts.append(p)
-		line=[self.verts.index(p) for p in line]
-		self.lines.append(line)
-
-	def sortedVertIndices(self):
-		vc=sum(self.verts)/len(self.verts)
-		va={(self.verts[vi]-vc).angle():vi for vi in range(len(self.verts))}
-		via= [va[a] for a in sorted(va.keys())]
-		return via
-
-	def refineEdges(self, ignoreTrisectors=True):
-		if not hasattr(self,'verts'): self.indexVerts()
-		l=len(self.edges)
-		dele=[]
-		for ei1 in range(l-1):
-			if not ei1 in dele:
-				e1=self.edges[ei1]
-				for ei2 in range(1,l):
-					if not ei2 in dele:
-						e2=self.edges[ei2]
-						if ignoreTrisectors or e1.other==e2.other: # same poly on other side
-							pa=list(set([e1.p1,e1.p2,e2.p1,e2.p2]))
-							if len(pa)==3 and self.collinear(pa):
-								if		e1.p1==e2.p1:
-										e1.p1=e2.p2
-										dele.append(ei2)
-								elif	e1.p1==e2.p2:
-										e1.p1=e2.p1
-										dele.append(ei2)
-								elif	e1.p2==e2.p1:
-										e1.p2=e2.p2
-										dele.append(ei2)
-								elif	e1.p2==e2.p2:
-										e1.p2=e2.p1
-										dele.append(ei2)
-
-		dele=list(set(dele))
-		self.edges=[self.edges[i] for i in range(l) if not i in dele]
-
-	def removeUnusedVerts(self):
-		if not hasattr(self,'verts'): self.refineEdges()
-		usedVerts= sorted(list(set([vi for edge in self.edges for vi in [edge.p1,edge.p2]])))
-		for edge in self.edges:
-			edge.p1= usedVerts.index(edge.p1)
-			edge.p2= usedVerts.index(edge.p2)
-		self.verts = [self.verts[vi] for vi in usedVerts]
-
-	def initBoundingBox(self, openVerts):
-		if not hasattr(self,'verts'): self.removeUnusedVerts()
-		xa=[self.verts[vi].x for vi in openVerts]
-		ya=[self.verts[vi].y for vi in openVerts]
-		xMin,xMax = min(xa),max(xa) ; wd=xMax-xMin
-		yMin,yMax = min(ya),max(ya) ; ht=yMax-yMin
-		self.boundingBox = Vec2(xMin,yMin),Vec2(xMax,yMax)
-		self.smallVal=sqrt(wd*wd+ht*ht)/(len(self.verts)**2)
-
-	def vertEdgeOther(self, vi):
-		for edge in self.edges:
-			if edge.p1==vi:		return edge,edge.p2
-			if edge.p2==vi:		return edge,edge.p1
-		return None,None
-
-	def rayRayIntersectPoint(self, oi,vi,oj,vj):
-		oi=self.verts[oi]
-		vi=self.verts[vi]
-		oj=self.verts[oj]
-		vj=self.verts[vj]
-		return rayRayIntersectPoint(oi,vi,oj,vj)
-
-	def weldOpenVerts(self):
-		if not hasattr(self,'verts'): self.removeUnusedVerts()
-		openVerts = [vi for vi in range(len(self.verts)) if len([e for e in self.edges if vi in [e.p1,e.p2]])==1]
-		self.initBoundingBox(openVerts) # determine smallVal
-		while len(openVerts)>1:
-			vi=openVerts.pop()
-			da={(self.verts[vi]-self.verts[vj]).length():vj for vj in openVerts}
-			d=sorted(da.keys())[0]
-			if d>self.smallVal: break
-			vj=da[d] ; openVerts.remove(vj)
-			ei,oi=self.vertEdgeOther(vi)
-			ej,oj=self.vertEdgeOther(vj)
-			ip= self.rayRayIntersectPoint(oi,vi,oj,vj)
-			if ip:
-				ip=self.addVert(ip)
-				if ei.p1==vi:	ei.p1=ip
-				else:			ei.p2=ip
-				if ej.p1==vj:	ej.p1=ip
-				else:			ej.p2=ip
-				return True
-
-	def cleanup(self):
-		self.indexVerts()
-		self.refineEdges()
-		self.removeUnusedVerts()
-		self.weldOpenVerts()
-		self.removeUnusedVerts()
-
-
-
-	def draw(self):
-		g.setColor(PURPLE)
-		g.drawLine( p1,self.centroid )
-		g.drawLine( p2,self.centroid )
-		g.setColor(BLUE)
-		g.drawLine( p1,p2 )
-
-	def otherEdgeWithVertIndex(self, vi, notEdge):
-		edges=[]
-		for edge in self.edges:
-			if edge!=notEdge:
-				if edge.p1==vi: return edge,edge.p2
-				if edge.p2==vi: return edge,edge.p1
-		return None,None
-
+	#	manhattan distance of p to self.centroid
 	def dist(self, p):
 		dx,dy=p-self.centroid
 		return abs(dx)+abs(dy)

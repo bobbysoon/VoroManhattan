@@ -155,14 +155,14 @@ void main() {
 	float vor= voronoi(gl_TexCoord[0].xy , dist<pi?2:3);
 	float val= dist<pi?pi-dist:min(sqrt(dist-pi),.125);
 	val=min(val,vor);
-	vec4 col= vec4(vec3(val),1.0);
-	if (dist<pi) {
-		float i=sin(pi-dist);
-		col.x= i;
-		col.y=min(i,col.y);
-		col.z= i;
-		//col.y*=1-(pi-dist);
+	vec3 col;
+	if (dist<pi) col=mix(vec3(0,1,0),vec3(0.4,0.5,0.6),sin(pi-dist));
+	else {
+		float a=sin(min(dist-pi,pi/2));
+		col= mix(vec3(0.5,0.25,0.125),vec3(0.2,0.2,0.25),a);
+		a=perlin( gl_TexCoord[0].xy/7.0 , 3);
+		col= mix(vec3(0.5,0.25,0.125),col,a);
 	}
-	gl_FragColor= col;
+	gl_FragColor= vec4(col*vor,1.0);
 }
 

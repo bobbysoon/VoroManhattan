@@ -412,7 +412,7 @@ def VoroMan(centroids, boundingBox):
 			x2,y2=pol.verts[i]
 			s+=(x1-x2)*(y1-y2)
 		pol.reversed=s<0
-		if False and pol.reversed:
+		if pol.reversed:
 			pol.verts.reverse()
 			pol.others.reverse()
 

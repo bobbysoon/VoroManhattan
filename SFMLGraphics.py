@@ -42,7 +42,9 @@ def hue(h, s=1.0, v=1.0):
 	if i == 4: return sf.Color(t, p, v)
 	if i == 5: return sf.Color(v, p, q)
 
+
 ZOOMSTEP=16.0
+PANDIV=16
 panSpeed=8.
 from math import *
 class Graphics:
@@ -98,34 +100,5 @@ class Graphics:
 				else:				self.window.view.zoom( (ZOOMSTEP+1)/ZOOMSTEP )
 				self.scale= self.window.view.size.x/self.window.size.x
 
-			if type(event) is sf.MouseButtonEvent:
-				if event.button==sf.Mouse.LEFT and event.pressed:
-					self.onLeftClick( self.window.map_pixel_to_coords(event.position) )
-				if event.button == sf.Mouse.MIDDLE:
-					self.panFrom= (event.position) if event.pressed else None
-
-			if type(event) is sf.MouseMoveEvent:
-				pos=(event.position)
-				self.window.title=str(self.window.map_pixel_to_coords(pos))
-				if self.panFrom:
-					dx,dy = self.panFrom-pos
-					self.panFrom= pos
-					self.window.view.move(dx*self.scale,dy*self.scale)
-
-		if sf.Keyboard.is_key_pressed(sf.Keyboard.A):
-			self.window.view.zoom(ZOOMSTEP/(ZOOMSTEP+1))
-			#print self.window.view.size
-			self.scale= self.window.view.size.x/self.window.size.x
-		elif sf.Keyboard.is_key_pressed(sf.Keyboard.Z):
-			self.window.view.zoom((ZOOMSTEP+1)/ZOOMSTEP)
-			#print self.window.view.size
-			self.scale= self.window.view.size.x/self.window.size.x
-
-		if sf.Keyboard.is_key_pressed(sf.Keyboard.LEFT):	dx=-1
-		elif sf.Keyboard.is_key_pressed(sf.Keyboard.RIGHT):	dx= 1
-		if sf.Keyboard.is_key_pressed(sf.Keyboard.UP):		dy=-1
-		elif sf.Keyboard.is_key_pressed(sf.Keyboard.DOWN):	dy= 1
-
-		self.window.view.move(dx*self.scale*panSpeed,dy*self.scale*panSpeed)
-
+g=Graphics(WindowSize=512, rate=30, debug=True)
 

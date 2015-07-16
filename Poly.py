@@ -46,6 +46,9 @@ class Border:
 		#self.flipped=not self.flipped
 		self.line.reverse()
 
+	def longerThan(self, l):
+		return l<self.line[0].dist(self.line[-1])
+
 
 
 def collinear(p0, p1, p2, asBool=True):

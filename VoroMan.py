@@ -150,8 +150,9 @@ def Manhattan( P, boundingBox ):
 	ky=	range(PLENTY)
 
 	#	bisectors
+	print
 	for i in range(N-1):
-		print i
+		print '%i/%i\r'%(i,N),
 		for j in range(i+1,N):
 			swapEm = abs(px[i]-px[j]) >= abs(py[i]-py[j])
 			if swapEm:	px,py = py,px
@@ -394,7 +395,7 @@ def Manhattan( P, boundingBox ):
 	for pol in poly: pol.isClosed=pol.loopBorders(smallVal=smallVal)
 	return [pol for pol in poly if pol.isClosed]
 
-def VoroMan(centroids, boundingBox):
+def VoroMan(centroids, boundingBox, tooSmall ):
 	polies = Manhattan( centroids, boundingBox ) # bounding box not really implemented yet. Only size is used.
 	for pol in polies:
 		pol.verts=[]
@@ -402,7 +403,13 @@ def VoroMan(centroids, boundingBox):
 		for b in pol.borders:
 			verts=b.line[:-1]
 			pol.verts.extend(verts)
-			pol.others.extend([b.other and b.other.isClosed]*len(verts))
+
+			if b.other and b.other.isClosed and b.longerThan(tooSmall):
+				pol.others.extend([b.other]*len(verts))
+			else:
+				pol.others.extend([None]*len(verts))
+				b.other=None
+
 			b.nVerts=len(b.line)
 			delattr(b,'line')
 
@@ -411,6 +418,7 @@ def VoroMan(centroids, boundingBox):
 			x1,y1=pol.verts[i-1]
 			x2,y2=pol.verts[i]
 			s+=(x1-x2)*(y1-y2)
+
 		pol.reversed=s<0
 		if pol.reversed:
 			pol.verts.reverse()
